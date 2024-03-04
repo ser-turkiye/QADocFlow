@@ -2,9 +2,10 @@ package junit
 
 import de.ser.doxis4.agentserver.AgentExecutionResult
 import org.junit.*
-import ser.QADocDraft
+import ser.QADocReqInit
+import ser.QADocTest
 
-class TEST_QADocDraft {
+class TEST_QADocTest {
 
     Binding binding
 
@@ -20,9 +21,9 @@ class TEST_QADocDraft {
 
     @Test
     void testForAgentResult() {
-        def agent = new QADocDraft()
+        def agent = new QADocTest()
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST06BPM_QA24b4a5a47c-006e-4e68-bbe3-4a7dae743a4d182024-03-04T15:26:39.009Z014"
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "SD04D_QA24b45acdc4-3b15-423a-863e-79f2ddfa3526182024-03-04T11:49:10.693Z011"
 
         def result = (AgentExecutionResult)agent.execute(binding.variables)
         assert result.resultCode == 0

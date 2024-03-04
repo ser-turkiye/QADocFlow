@@ -6,8 +6,6 @@ import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Arrays;
-
 
 public class QADocImport extends UnifiedAgent {
     Logger log = LogManager.getLogger();
@@ -46,14 +44,13 @@ public class QADocImport extends UnifiedAgent {
             docId = Utils.getQADocId(qaInfObj, document);
 
             document.commit();
-            //processInstance.commit();
             log.info("Tested.");
 
         } catch (Exception e) {
             //throw new RuntimeException(e);
             log.error("Exception       : " + e.getMessage());
             log.error("    Class       : " + e.getClass());
-            log.error("    Stack-Trace : " + Arrays.toString(e.getStackTrace()));
+            log.error("    Stack-Trace : " + e.getStackTrace() );
             return resultError("Exception : " + e.getMessage());
         }
 

@@ -1,8 +1,10 @@
 package ser;
 
-import com.ser.blueline.*;
+import com.ser.blueline.IInformationObject;
+import com.ser.blueline.ILink;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
+import com.ser.foldermanager.IFolder;
 import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,16 +13,14 @@ import java.util.Arrays;
 import java.util.List;
 
 
-public class QADocPublish extends UnifiedAgent {
+public class QADocReqCancel extends UnifiedAgent {
     Logger log = LogManager.getLogger();
     IProcessInstance processInstance;
     IInformationObject qaInfObj;
     ProcessHelper helper;
     ITask task;
     IInformationObject document;
-    List<ILink> attachLinks;
     String compCode;
-    String docNr;
     String reqId;
     @Override
     protected Object execute() {
@@ -43,8 +43,8 @@ public class QADocPublish extends UnifiedAgent {
             helper = new ProcessHelper(Utils.session);
             XTRObjects.setSession(Utils.session);
 
-
             processInstance = task.getProcessInstance();
+
             compCode = (processInstance != null ? Utils.compCode(processInstance) : "");
             if(compCode.isEmpty()){
                 throw new Exception("QA-Workspace no is empty.");
@@ -54,51 +54,31 @@ public class QADocPublish extends UnifiedAgent {
                 throw new Exception("QA-Workspace not found [" + compCode + "].");
             }
 
-            reqId = Utils.getQAReqId(qaInfObj, processInstance);
-            docNr = Utils.getQADocNr(qaInfObj, processInstance);
-
             document = processInstance.getMainInformationObject();
-            attachLinks = processInstance.getLoadedInformationObjectLinks().getLinks();
             if(document == null){
-                document = (!attachLinks.isEmpty() ? attachLinks.get(0).getTargetInformationObject() : document);
+                List<ILink> aLnks = processInstance.getLoadedInformationObjectLinks().getLinks();
+                document = (!aLnks.isEmpty() ? aLnks.get(0).getTargetInformationObject() : document);
                 if(document != null) {
                     processInstance.setMainInformationObjectID(document.getID());
-                    processInstance.commit();
                 }
             }
             if(document == null){
                 throw new Exception("QA-Document not found.");
             }
-            document.setDescriptorValue(Conf.Descriptors.DocNr, docNr);
 
-            int revNr = -1;
-            IInformationObject[] docs = Utils.getQADocuments(compCode, docNr, helper);
-            for(IInformationObject doc : docs){
-                if(doc.getID().equals(document.getID())){continue;}
+            String dsts = document.getDescriptorValue(Conf.Descriptors.Status, String.class);
+            dsts = (dsts == null? "" : dsts);
 
-                String dsts = doc.getDescriptorValue(Conf.Descriptors.Status, String.class);
-                dsts = (dsts == null ? "" : dsts);
+            String pctg = processInstance.getDescriptorValue(Conf.Descriptors.ProcCatg, String.class);
+            pctg = (pctg == null? "" : pctg);
 
-                String srnr = doc.getDescriptorValue(Conf.Descriptors.RevNr, String.class);
-                int rvnr = 0;
-                try {
-                    rvnr = (srnr == null || srnr.isEmpty() ? rvnr : Integer.parseInt(srnr));
-                } catch (NumberFormatException e) {
-                    rvnr = 0;
-                }
-                revNr = (rvnr > revNr ? rvnr : revNr);
-
-                if(!dsts.equals("PUBLISH")){continue;}
-                doc.setDescriptorValue(Conf.Descriptors.Status, "REVISED");
-                doc.setDescriptorValue(Conf.Descriptors.ReqLastId, reqId);
-                doc.commit();
+            if(pctg.equals("Publish") && dsts.equals("WA4APRV")) {
+                document.setDescriptorValue(Conf.Descriptors.Status, "DRAFT");
+                document.commit();
             }
 
-            document.setDescriptorValue(Conf.Descriptors.RevNr, (revNr + 1) + "");
-            document.setDescriptorValue(Conf.Descriptors.Status, "PUBLISH");
-            document.setDescriptorValue(Conf.Descriptors.ReqPrevId, reqId);
-
-            document.commit();
+            reqId = Utils.getQAReqId(qaInfObj, processInstance);
+            processInstance.commit();
 
             log.info("Tested.");
 

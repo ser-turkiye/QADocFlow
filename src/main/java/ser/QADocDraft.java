@@ -56,7 +56,7 @@ public class QADocDraft extends UnifiedAgent {
             }
             qaInfObj = Utils.getQAWorkspace(compCode, helper);
             if(qaInfObj == null){
-                throw new Exception("QA-Worksapce not found [" + compCode + "].");
+                throw new Exception("QA-Workspace not found [" + compCode + "].");
             }
 
             reqId = Utils.getQAReqId(qaInfObj, processInstance);

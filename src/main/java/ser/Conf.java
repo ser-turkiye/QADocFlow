@@ -16,6 +16,7 @@ public class Conf {
         public static final String PatternReqNo = "PatternRequestNo";
         public static final String CompCode = "OrgCompanyDescription";
         public static final String CatgCode = "ObjectCategoryName";
+        public static final String ProcCatg = "Categories";
         public static final String TypeCode = "ObjectType";
         public static final String DocId = "ObjectDocID";
         public static final String DocNr = "ObjectNumber";

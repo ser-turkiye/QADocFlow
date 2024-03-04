@@ -22,7 +22,7 @@ class TEST_QADocPublish {
     void testForAgentResult() {
         def agent = new QADocPublish()
 
-        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST06BPM_QA243fd78b86-ed4c-465a-b36d-6e9f6a009074182024-02-27T09:59:36.921Z013"
+        binding["AGENT_EVENT_OBJECT_CLIENT_ID"] = "ST06BPM_QA242832e00f-de9c-4b6f-88aa-ca9eea083bdf182024-03-04T11:51:29.237Z010"
 
         def result = (AgentExecutionResult)agent.execute(binding.variables)
         assert result.resultCode == 0

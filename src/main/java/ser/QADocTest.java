@@ -1,47 +1,43 @@
 package ser;
 
-import com.ser.blueline.CopyScope;
-import com.ser.blueline.IDocument;
 import com.ser.blueline.IInformationObject;
 import com.ser.blueline.ILink;
 import com.ser.blueline.bpm.IProcessInstance;
 import com.ser.blueline.bpm.ITask;
-import com.ser.foldermanager.IFolder;
+import com.ser.blueline.metaDataComponents.IStringMatrix;
 import de.ser.doxis4.agentserver.UnifiedAgent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static ser.Utils.getParamsByComp;
 
-public class QADocArchive extends UnifiedAgent {
+
+public class QADocTest extends UnifiedAgent {
     Logger log = LogManager.getLogger();
     IProcessInstance processInstance;
     IInformationObject qaInfObj;
     ProcessHelper helper;
     ITask task;
-    IDocument document;
-    IDocument newDoc;
+    IInformationObject document;
     List<ILink> attachLinks;
     String compCode;
     String docNr;
     String reqId;
     @Override
     protected Object execute() {
-        if (getEventTask() == null)
+        if (getEventDocument() == null)
             return resultError("Null Document object");
-
-        if(getEventTask().getProcessInstance().findLockInfo().getOwnerID() != null){
-            return resultRestart("Restarting Agent");
-        }
 
         Utils.session = getSes();
         Utils.bpm = getBpm();
         Utils.server = Utils.session.getDocumentServer();
         Utils.loadDirectory(Conf.Paths.MainPath);
-        
-        task = getEventTask();
+
+        document = getEventDocument();
 
         try {
 
@@ -49,8 +45,7 @@ public class QADocArchive extends UnifiedAgent {
             XTRObjects.setSession(Utils.session);
 
 
-            processInstance = task.getProcessInstance();
-            compCode = (processInstance != null ? Utils.compCode(processInstance) : "");
+            compCode = (document != null ? Utils.compCode(document) : "");
             if(compCode.isEmpty()){
                 throw new Exception("QA-Workspace no is empty.");
             }
@@ -59,26 +54,9 @@ public class QADocArchive extends UnifiedAgent {
                 throw new Exception("QA-Workspace not found [" + compCode + "].");
             }
 
-            reqId = Utils.getQAReqId(qaInfObj, processInstance);
-            docNr = Utils.getQADocNr(qaInfObj, processInstance);
-
-            document = (IDocument) processInstance.getMainInformationObject();
-            attachLinks = processInstance.getLoadedInformationObjectLinks().getLinks();
-            if(document == null){
-                document = (!attachLinks.isEmpty() ? (IDocument) attachLinks.get(0).getTargetInformationObject() : null);
-                if(document != null) {
-                    processInstance.setMainInformationObjectID(document.getID());
-                }
-            }
-            if(document == null){
-                throw new Exception("QA-Document not found.");
-            }
-
-            document.setDescriptorValue(Conf.Descriptors.Status, "ARCHIVED");
-            document.setDescriptorValue(Conf.Descriptors.ReqLastId, reqId);
-
-            document.commit();
-            processInstance.commit();
+            JSONObject cats = Utils.getParamsByComp("QA_CATEGORIES",
+                    new String[]{"code", "name", "company"}, "name",
+                    "company", compCode);
 
             log.info("Tested.");
 

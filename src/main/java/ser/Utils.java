@@ -45,6 +45,35 @@ public class Utils {
         }
         return rtrn;
     }
+
+
+    static JSONObject getParamsByComp(String name, String[] cols, String colmKey, String colmComp, String comp) {
+        JSONObject rtrn = new JSONObject();
+        IStringMatrix matrix = Utils.server.getStringMatrix(name, Utils.session);
+
+        if(matrix == null){return rtrn;}
+        List<List<String>> rmtx = matrix.getRawRows();
+
+        int lcnt = (-1);
+        for(List<String> line : rmtx) {
+            lcnt++;
+            JSONObject ljsn = new JSONObject();
+            int clix = (-1);
+            for(String colm : cols){
+                clix++;
+                String cval = (line.size() < clix ? "" : line.get(clix));
+                ljsn.put(colm, cval);
+            }
+            String ixnm = (ljsn.has(colmKey) ? ljsn.getString(colmKey) : "");
+            if(ixnm.isEmpty()){continue;}
+
+            String icmp = (ljsn.has(colmComp) ? ljsn.getString(colmComp) : "");
+            if(icmp.isEmpty() || !icmp.equals(comp)){continue;}
+
+            rtrn.put(ixnm, ljsn);
+        }
+        return rtrn;
+    }
     public static IDocument createQADocument()  {
         IArchiveClass ac = server.getArchiveClass(Conf.ClassIDs.QADocument, session);
         IDatabase db = session.getDatabase(ac.getDefaultDatabaseID());
@@ -157,143 +186,164 @@ public class Utils {
     public static String getQADocId(IInformationObject qaws, IDocument document) throws Exception {
         String rtrn = document.getDescriptorValue(Conf.Descriptors.DocId, String.class);
         rtrn = (rtrn == null ? "" : rtrn.trim());
-        if(rtrn.isEmpty()) {
+        if(!rtrn.isEmpty()) {return rtrn;}
 
-            String compCode = "";
-            if(Utils.hasDescriptor(document, Conf.Descriptors.CompCode)){
-                compCode = document.getDescriptorValue(Conf.Descriptors.CompCode, String.class);
-                compCode = (compCode == null ? "" : compCode).trim();
-            }
-            String docStts = "";
-            if(Utils.hasDescriptor(document, Conf.Descriptors.Status)){
-                docStts = document.getDescriptorValue(Conf.Descriptors.Status, String.class);
-                docStts = (docStts == null ? "" : docStts).trim();
-            }
-
-            String cntPattern = "";
-            if(docStts.equals("IMPORT") && Utils.hasDescriptor(qaws, Conf.Descriptors.PatternImpNr)){
-                cntPattern = qaws.getDescriptorValue(Conf.Descriptors.PatternImpNr, String.class);
-                cntPattern = (cntPattern == null ? "" : cntPattern).trim();
-            }
-            if(docStts.equals("DRAFT") && Utils.hasDescriptor(qaws, Conf.Descriptors.PatternDrfNo)){
-                cntPattern = qaws.getDescriptorValue(Conf.Descriptors.PatternDrfNo, String.class);
-                cntPattern = (cntPattern == null ? "" : cntPattern).trim();
-            }
-
-            if(!cntPattern.isEmpty()
-                    && !compCode.isEmpty()
-                    && !docStts.isEmpty()){
-                String counterName = AutoText.init().with(document)
-                        .param("Company", compCode)
-                        .param("Status", docStts)
-                        .run("QA.{Company}.{Status}");
-
-                NumberRange nr = new NumberRange();
-                if(!nr.has(counterName)){
-                    nr.append(counterName, cntPattern, 0L);
-                }
-
-                nr.parameter("Company", compCode);
-                nr.parameter("Status", docStts);
-                rtrn = nr.increment(counterName, cntPattern);
-            }
-
-            document.setDescriptorValue(Conf.Descriptors.DocId,
-                    rtrn);
+        String compCode = "";
+        if(Utils.hasDescriptor(document, Conf.Descriptors.CompCode)){
+            compCode = document.getDescriptorValue(Conf.Descriptors.CompCode, String.class);
+            compCode = (compCode == null ? "" : compCode).trim();
         }
+        String docStts = "";
+        if(Utils.hasDescriptor(document, Conf.Descriptors.Status)){
+            docStts = document.getDescriptorValue(Conf.Descriptors.Status, String.class);
+            docStts = (docStts == null ? "" : docStts).trim();
+        }
+
+        String cntPattern = "";
+        if(docStts.equals("IMPORT") && Utils.hasDescriptor(qaws, Conf.Descriptors.PatternImpNr)){
+            cntPattern = qaws.getDescriptorValue(Conf.Descriptors.PatternImpNr, String.class);
+            cntPattern = (cntPattern == null ? "" : cntPattern).trim();
+        }
+        if(docStts.equals("DRAFT") && Utils.hasDescriptor(qaws, Conf.Descriptors.PatternDrfNo)){
+            cntPattern = qaws.getDescriptorValue(Conf.Descriptors.PatternDrfNo, String.class);
+            cntPattern = (cntPattern == null ? "" : cntPattern).trim();
+        }
+
+        if(!cntPattern.isEmpty()
+                && !compCode.isEmpty()
+                && !docStts.isEmpty()){
+            String counterName = AutoText.init().with(document)
+                    .param("Company", compCode)
+                    .param("Status", docStts)
+                    .run("QA.{Company}.{Status}");
+
+            NumberRange nr = new NumberRange();
+            if(!nr.has(counterName)){
+                nr.append(counterName, cntPattern, 0L);
+            }
+
+            nr.parameter("Company", compCode);
+            nr.parameter("Status", docStts);
+            rtrn = nr.increment(counterName, cntPattern);
+        }
+
+        document.setDescriptorValue(Conf.Descriptors.DocId,
+                rtrn);
         return rtrn;
     }
     public static String getQAReqId(IInformationObject qaws, IProcessInstance processInstance) throws Exception {
         String rtrn = processInstance.getDescriptorValue(Conf.Descriptors.DocId, String.class);
         rtrn = (rtrn == null ? "" : rtrn.trim());
-        if(rtrn.isEmpty()) {
+        if(!rtrn.isEmpty()) {return rtrn;}
 
-            String compCode = "";
-            if(Utils.hasDescriptor(processInstance, Conf.Descriptors.CompCode)){
-                compCode = processInstance.getDescriptorValue(Conf.Descriptors.CompCode, String.class);
-                compCode = (compCode == null ? "" : compCode).trim();
-            }
-            String cntPattern = "";
-            if(Utils.hasDescriptor(qaws, Conf.Descriptors.PatternReqNo)){
-                cntPattern = qaws.getDescriptorValue(Conf.Descriptors.PatternReqNo, String.class);
-                cntPattern = (cntPattern == null ? "" : cntPattern).trim();
-            }
-
-            String reqType = "Document";
-            if(!cntPattern.isEmpty()
-                    && !compCode.isEmpty()
-                    && !reqType.isEmpty()){
-                String counterName = AutoText.init().with(processInstance)
-                        .param("Company", compCode)
-                        .param("ReqType", reqType)
-                        .run("QA.{Company}.Request.{ReqType}");
-
-                NumberRange nr = new NumberRange();
-                if(!nr.has(counterName)){
-                    nr.append(counterName, cntPattern, 0L);
-                }
-
-                nr.parameter("Company", compCode);
-                nr.parameter("ReqType", reqType);
-                rtrn = nr.increment(counterName, cntPattern);
-            }
-
-            processInstance.setDescriptorValue(Conf.Descriptors.DocId,
-                    rtrn);
+        String compCode = "";
+        if(Utils.hasDescriptor(processInstance, Conf.Descriptors.CompCode)){
+            compCode = processInstance.getDescriptorValue(Conf.Descriptors.CompCode, String.class);
+            compCode = (compCode == null ? "" : compCode).trim();
         }
+        String cntPattern = "";
+        if(Utils.hasDescriptor(qaws, Conf.Descriptors.PatternReqNo)){
+            cntPattern = qaws.getDescriptorValue(Conf.Descriptors.PatternReqNo, String.class);
+            cntPattern = (cntPattern == null ? "" : cntPattern).trim();
+        }
+
+        String reqType = "Document";
+        if(!cntPattern.isEmpty()
+                && !compCode.isEmpty()
+                && !reqType.isEmpty()){
+            String counterName = AutoText.init().with(processInstance)
+                    .param("Company", compCode)
+                    .param("ReqType", reqType)
+                    .run("QA.{Company}.Request.{ReqType}");
+
+            NumberRange nr = new NumberRange();
+            if(!nr.has(counterName)){
+                nr.append(counterName, cntPattern, 0L);
+            }
+
+            nr.parameter("Company", compCode);
+            nr.parameter("ReqType", reqType);
+            rtrn = nr.increment(counterName, cntPattern);
+        }
+
+        processInstance.setDescriptorValue(Conf.Descriptors.DocId,
+                rtrn);
         return rtrn;
     }
     public static String getQADocNr(IInformationObject qaws, IProcessInstance processInstance) throws Exception {
         String rtrn = processInstance.getDescriptorValue(Conf.Descriptors.DocNr, String.class);
         rtrn = (rtrn == null ? "" : rtrn.trim());
-        if(rtrn.isEmpty()) {
+        //if(!rtrn.isEmpty()) {return rtrn;}
 
-            String compCode = "";
-            if(Utils.hasDescriptor(processInstance, Conf.Descriptors.CompCode)){
-                compCode = processInstance.getDescriptorValue(Conf.Descriptors.CompCode, String.class);
-                compCode = (compCode == null ? "" : compCode).trim();
-            }
-            String catgCode = "";
-            if(Utils.hasDescriptor(processInstance, Conf.Descriptors.CatgCode)){
-                catgCode = processInstance.getDescriptorValue(Conf.Descriptors.CatgCode, String.class);
-                catgCode = (catgCode == null ? "" : catgCode).trim();
-            }
-            String typeCode = "";
-            if(Utils.hasDescriptor(processInstance, Conf.Descriptors.TypeCode)){
-                typeCode = processInstance.getDescriptorValue(Conf.Descriptors.TypeCode, String.class);
-                typeCode = (typeCode == null ? "" : typeCode).trim();
-            }
-
-            String cntPattern = "";
-            if(Utils.hasDescriptor(qaws, Conf.Descriptors.PatternDocNr)){
-                cntPattern = qaws.getDescriptorValue(Conf.Descriptors.PatternDocNr, String.class);
-                cntPattern = (cntPattern == null ? "" : cntPattern).trim();
-            }
-
-            if(!cntPattern.isEmpty()
-            && !compCode.isEmpty()
-            && !catgCode.isEmpty()
-            && !typeCode.isEmpty()){
-                String counterName = AutoText.init().with(processInstance)
-                        .param("Company", compCode)
-                        .param("Category", catgCode)
-                        .param("Type", typeCode)
-                        .run("QA.{Company}.{Category}.{Type}");
-
-                NumberRange nr = new NumberRange();
-                if(!nr.has(counterName)){
-                    nr.append(counterName, cntPattern, 0L);
-                }
-
-                nr.parameter("Company", compCode);
-                nr.parameter("Category", catgCode);
-                nr.parameter("Type", typeCode);
-                rtrn = nr.increment(counterName, cntPattern);
-            }
-
-            processInstance.setDescriptorValue(Conf.Descriptors.DocNr,
-                    rtrn);
+        String compCode = "";
+        if(Utils.hasDescriptor(processInstance, Conf.Descriptors.CompCode)){
+            compCode = processInstance.getDescriptorValue(Conf.Descriptors.CompCode, String.class);
+            compCode = (compCode == null ? "" : compCode).trim();
         }
+        String catgName = "";
+        if(Utils.hasDescriptor(processInstance, Conf.Descriptors.CatgCode)){
+            catgName = processInstance.getDescriptorValue(Conf.Descriptors.CatgCode, String.class);
+            catgName = (catgName == null ? "" : catgName).trim();
+        }
+        String catgCode = "";
+        if(!catgName.isEmpty()){
+            JSONObject cats = Utils.getParamsByComp("QA_CATEGORIES",
+                    new String[]{"code", "name", "company"}, "name",
+                    "company", compCode);
+            if(cats.has(catgName)){
+                JSONObject ccat = (JSONObject) cats.get(catgName);
+                if(ccat.has("code")){
+                    catgCode = ccat.getString("code");
+                }
+            }
+        }
+        String typeName = "";
+        if(Utils.hasDescriptor(processInstance, Conf.Descriptors.TypeCode)){
+            typeName = processInstance.getDescriptorValue(Conf.Descriptors.TypeCode, String.class);
+            typeName = (typeName == null ? "" : typeName).trim();
+        }
+        String typeCode = "";
+        if(!typeName.isEmpty()){
+            JSONObject typs = Utils.getParamsByComp("QA_TYPES",
+                    new String[]{"code", "name", "company", "category"}, "name",
+                    "company", compCode);
+            if(typs.has(typeName)){
+                JSONObject ctyp = (JSONObject) typs.get(typeName);
+                if(ctyp.has("code")){
+                    typeCode = ctyp.getString("code");
+                }
+            }
+        }
+
+        String cntPattern = "";
+        if(Utils.hasDescriptor(qaws, Conf.Descriptors.PatternDocNr)){
+            cntPattern = qaws.getDescriptorValue(Conf.Descriptors.PatternDocNr, String.class);
+            cntPattern = (cntPattern == null ? "" : cntPattern).trim();
+        }
+
+        if(!cntPattern.isEmpty()
+        && !compCode.isEmpty()
+        && !catgCode.isEmpty()
+        && !typeCode.isEmpty()){
+            String counterName = AutoText.init().with(processInstance)
+                    .param("Company", compCode)
+                    .param("Category", catgCode)
+                    .param("Type", typeCode)
+                    .run("QA.{Company}.{Category}.{Type}");
+
+            NumberRange nr = new NumberRange();
+            if(!nr.has(counterName)){
+                nr.append(counterName, cntPattern, 0L);
+            }
+
+            nr.parameter("Company", compCode);
+            nr.parameter("Category", catgCode);
+            nr.parameter("Type", typeCode);
+            rtrn = nr.increment(counterName, cntPattern);
+        }
+
+        processInstance.setDescriptorValue(Conf.Descriptors.DocNr,
+                rtrn);
         return rtrn;
     }
     public static void sendHTMLMail(JSONObject pars) throws Exception {
