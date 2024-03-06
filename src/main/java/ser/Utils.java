@@ -273,7 +273,7 @@ public class Utils {
     public static String getQADocNr(IInformationObject qaws, IProcessInstance processInstance) throws Exception {
         String rtrn = processInstance.getDescriptorValue(Conf.Descriptors.DocNr, String.class);
         rtrn = (rtrn == null ? "" : rtrn.trim());
-        //if(!rtrn.isEmpty()) {return rtrn;}
+        if(!rtrn.isEmpty()) {return rtrn;}
 
         String compCode = "";
         if(Utils.hasDescriptor(processInstance, Conf.Descriptors.CompCode)){
